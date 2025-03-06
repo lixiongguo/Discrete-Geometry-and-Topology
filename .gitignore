@@ -39,3 +39,5 @@
 *.obj
 *.stl
 .vscode/settings.json
+
+**/builds/
