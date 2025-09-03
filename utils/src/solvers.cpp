@@ -51,7 +51,8 @@ Vector<std::complex<double>> solveInversePowerMethod(const SparseMatrix<std::com
     Vector<std::complex<double>> y;
     y.setRandom(A.cols());
     while (residual(A, y) > epsilon) {
-      y = solvePositiveDefinite(SparseMatrix<std::complex<double>>(A), y);
+      auto mat = SparseMatrix<std::complex<double>>(A);
+      y = solvePositiveDefinite(mat, y);
       Vector<std::complex<double>> yMean(A.cols());
       yMean.setConstant(y.mean());
       y = y - yMean;
