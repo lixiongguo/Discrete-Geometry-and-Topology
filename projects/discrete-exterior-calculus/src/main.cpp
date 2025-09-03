@@ -44,18 +44,22 @@ std::string currentFilePath = "../../../input/cowhead.obj";
 bool showFileDialog = false;
 char filePathBuffer[256];
 
-
+// 展平算法相关变量
+enum class FlattenMethod { Tutte, ARAP, LSCM };
+FlattenMethod currentFlattenMethod = FlattenMethod::Tutte;
 // Windows文件选择对话框函数
 #ifdef _WIN32
 std::string openFileBrowser() {
     OPENFILENAME ofn;
     char fileName[256] = "";
+    char initialDir[MAX_PATH] = "../../../input/"; // 设置默认目录
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
     ofn.lpstrFilter = "OBJ Files (*.obj)\0*.obj\0All Files (*.*)\0*.*\0";
     ofn.lpstrFile = fileName;
     ofn.nMaxFile = sizeof(fileName);
     ofn.lpstrTitle = "Select Model File";
+    ofn.lpstrInitialDir = initialDir; // 设置初始目录
     ofn.Flags = OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST;
     
     if (GetOpenFileName(&ofn)) {
@@ -103,9 +107,22 @@ void loadMesh(const std::string& filepath) {
     strcpy(filePathBuffer, filepath.c_str());
     flipZ();
 }
-/*
- * User-defined buttons
- */
+// 展平算法函数实现（占位符）
+void flattenMesh(FlattenMethod method) {
+    // TODO: 实现具体的展平算法
+    switch (method) {
+        case FlattenMethod::Tutte:
+            // 实现 Tutte 展平算法
+            break;
+        case FlattenMethod::ARAP:
+            // 实现 ARAP 展平算法
+            break;
+        case FlattenMethod::LSCM:
+            // 实现 LSCM 展平算法
+            break;
+    }
+}
+
 void functionCallback() {
     if (ImGui::Button("Select Model File")) {
 #ifdef _WIN32
@@ -123,7 +140,17 @@ void functionCallback() {
         showFileDialog = true;
 #endif
     }
+        // 展平算法下拉列表
+    const char* flattenMethodNames[] = { "Tutte", "ARAP", "LSCM" };
+    int currentMethodIndex = static_cast<int>(currentFlattenMethod);
+    if (ImGui::Combo("Flatten Method", &currentMethodIndex, flattenMethodNames, IM_ARRAYSIZE(flattenMethodNames))) {
+        currentFlattenMethod = static_cast<FlattenMethod>(currentMethodIndex);
+    }
     
+    // 展平按钮
+    if (ImGui::Button("Flatten")) {
+        flattenMesh(currentFlattenMethod);
+    }
     if (showFileDialog) {
         ImGui::OpenPopup("Select Model File");
         showFileDialog = false;
