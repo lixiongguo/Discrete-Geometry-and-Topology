@@ -219,7 +219,7 @@ int main(int argc, char** argv) {
 
     // If a mesh name was not given, use default mesh.
     //std::string filepath = "../../../input/cowhead.obj";
-    std::string filepath = TUTORIAL_SHARED_PATH "/Bunny_head.obj";
+    std::string filepath = TUTORIAL_SHARED_PATH "/David328.obj";//David328 Nefertiti_face
     if (inputFilename) {
         filepath = args::get(inputFilename);
     }
@@ -255,8 +255,8 @@ int main(int argc, char** argv) {
     psMesh->setSmoothShade(true);
     psMesh->setSurfaceColor({1.0, 0.45, 0.0}); // orange
 
-    initializeParameterizations();
-    addCheckerboard(SCP_FLATTENING);
+    //initializeParameterizations();
+    //addCheckerboard(SCP_FLATTENING);
 
     // Give control to the polyscope gui
     polyscope::show();

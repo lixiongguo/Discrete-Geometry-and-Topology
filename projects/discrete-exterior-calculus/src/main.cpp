@@ -21,7 +21,7 @@
 #include "solvers.h"
 #include <algorithm>
 #include <map>
-
+#include "spectral-conformal-parameterization.h"
 // ** taken from Polyscope gl_engine.h -- not sure how to avoid using OpenGL for texture loading
 #include "stb_image.h"
 #ifdef __APPLE__
@@ -40,13 +40,20 @@ std::unique_ptr<ManifoldSurfaceMesh> mesh;
 std::unique_ptr<VertexPositionGeometry> geometry;
 
 polyscope::SurfaceMesh* psMesh;
-std::string currentFilePath = "../../../input/cowhead.obj";
+std::string currentFilePath = "../../../input/Nefertiti_face.obj";
 bool showFileDialog = false;
 char filePathBuffer[256];
 
 // 展平算法相关变量
-enum class FlattenMethod { Tutte, ARAP, LSCM };
+enum class FlattenMethod { Tutte, ARAP, LSCM, SCP};
 FlattenMethod currentFlattenMethod = FlattenMethod::Tutte;
+polyscope::SurfaceParameterizationQuantity* checkerboard;
+Vector3 CoM;                        // original center of mass, for re-centering purposes
+VertexData<Vector3> ORIGINAL;       // original vertex positions
+VertexData<Vector3> SCP_MESH;       // vertex positions of SCP
+VertexData<Vector2> SCP_FLATTENING; // SCP solution
+bool DISPLAY_FLAT = false;
+
 // Windows文件选择对话框函数
 #ifdef _WIN32
 std::string openFileBrowser() {
@@ -131,6 +138,27 @@ void loadMesh(const std::string& filepath) {
     strcpy(filePathBuffer, filepath.c_str());
     flipZ();
 }
+
+void addCheckerboard(VertexData<Vector2>& flattening) {
+
+    std::vector<std::array<double, 2>> V_uv(mesh->nVertices());
+    for (Vertex v : mesh->vertices()) {
+        V_uv[v.getIndex()] = {flattening[v][0], flattening[v][1]};
+    }
+    checkerboard = psMesh->addVertexParameterizationQuantity("checkerboard", V_uv);
+    checkerboard->setEnabled(true);
+    checkerboard->setStyle(polyscope::ParamVizStyle::CHECKER);
+    checkerboard->setCheckerColors(std::make_pair(glm::vec3{1.0, 0.45, 0.0}, glm::vec3{0.55, 0.27, 0.07}));
+    checkerboard->setCheckerSize(0.002);
+}
+VertexData<Vector3> mapToMeshData(VertexData<Vector2>& flattening) {
+
+    VertexData<Vector3> flat = geometry->inputVertexPositions;
+    for (Vertex v : mesh->vertices()) {
+        flat[v] = Vector3{flattening[v][0], flattening[v][1], 0.0};
+    }
+    return flat;
+}
 // 展平算法函数实现（占位符）
 void flattenMesh(FlattenMethod method) {
     // TODO: 实现具体的展平算法
@@ -145,6 +173,25 @@ void flattenMesh(FlattenMethod method) {
             // 实现 LSCM 展平算法
             break;
     }
+    ORIGINAL = geometry->inputVertexPositions;
+    SpectralConformalParameterization SCP = SpectralConformalParameterization(mesh.get(), geometry.get());
+    SCP_FLATTENING = SCP.flatten();
+    SCP_MESH = mapToMeshData(SCP_FLATTENING);
+    addCheckerboard(SCP_FLATTENING);
+
+    if (DISPLAY_FLAT) 
+    {
+        // Display SCP parameterization
+        geometry->inputVertexPositions = SCP_MESH;
+        geometry->normalize(CoM, true);
+        polyscope::view::flyToHomeView();
+        polyscope::view::style = polyscope::view::NavigateStyle::Planar;
+    } else {
+        // Display original
+        geometry->inputVertexPositions = ORIGINAL;
+        polyscope::view::style = polyscope::view::NavigateStyle::Turntable;
+    }
+    redraw();
 }
 
 void functionCallback() {
@@ -176,14 +223,14 @@ void functionCallback() {
 #endif
     }
         // 展平算法下拉列表
-    const char* flattenMethodNames[] = { "Tutte", "ARAP", "LSCM" };
+    const char* flattenMethodNames[] = { "Tutte", "ARAP", "LSCM","SCP" };
     int currentMethodIndex = static_cast<int>(currentFlattenMethod);
     if (ImGui::Combo("Flatten Method", &currentMethodIndex, flattenMethodNames, IM_ARRAYSIZE(flattenMethodNames))) {
         currentFlattenMethod = static_cast<FlattenMethod>(currentMethodIndex);
     }
     
     // 展平按钮
-    if (ImGui::Button("Flatten")) {
+    if (ImGui::Checkbox("Flat", &DISPLAY_FLAT)) {
         flattenMesh(currentFlattenMethod);
     }
     if (showFileDialog) {
@@ -211,6 +258,7 @@ void functionCallback() {
         
         ImGui::EndPopup();
     }
+    
 
 }
 
@@ -222,6 +270,8 @@ int main(int argc, char** argv) {
 
     polyscope::init();
     polyscope::state::userCallback = functionCallback;
+
+
     polyscope::show();
 
     return EXIT_SUCCESS;
