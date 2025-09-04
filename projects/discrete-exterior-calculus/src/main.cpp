@@ -69,7 +69,31 @@ std::string openFileBrowser() {
     return "";
 }
 #endif
+#ifdef __APPLE__
+#include <cstdio>
+#include <iostream>
+#include <string>
 
+std::string openFileBrowser() {
+    // 使用AppleScript调用macOS文件选择对话框
+    std::string command = "osascript -e 'tell application \"Finder\" to set selectedFile to choose file with prompt \"选择OBJ模型文件\" of type {\"obj\"}' -e 'get POSIX path of selectedFile' 2>/dev/null";
+    FILE* pipe = popen(command.c_str(), "r");
+    if (!pipe) return "";
+
+    char buffer[1024];
+    std::string result = "";
+    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+        result += buffer;
+    }
+    pclose(pipe);
+
+    // 移除换行符
+    if (!result.empty() && result.back() == '\n') {
+        result.pop_back();
+    }
+    return result;
+}
+#endif
 
 void flipZ() {
     // Rotate mesh 180 deg about up-axis on startup
@@ -126,6 +150,17 @@ void flattenMesh(FlattenMethod method) {
 void functionCallback() {
     if (ImGui::Button("Select Model File")) {
 #ifdef _WIN32
+        std::string selectedFile = openFileBrowser();
+        if (!selectedFile.empty()) {
+            try {
+                ::loadMesh(selectedFile);
+                currentFilePath = selectedFile;
+                strcpy(filePathBuffer, currentFilePath.c_str());
+            } catch (const std::exception& e) {
+                // Handle error
+            }
+        }
+#elif __APPLE__
         std::string selectedFile = openFileBrowser();
         if (!selectedFile.empty()) {
             try {
