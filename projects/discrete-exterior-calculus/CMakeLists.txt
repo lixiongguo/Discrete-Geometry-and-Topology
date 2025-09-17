@@ -63,6 +63,7 @@ endif()
 # Edit files to build here.
 set(SRCS 
   src/main.cpp
+  src/spectral-conformal-parameterization.cpp
   ../../utils/src/colormap.cpp
   ../../utils/src/solvers.cpp
 )
