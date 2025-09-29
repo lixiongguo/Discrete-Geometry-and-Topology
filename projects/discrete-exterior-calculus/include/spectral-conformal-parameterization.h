@@ -18,6 +18,7 @@ class SpectralConformalParameterization {
     SpectralConformalParameterization(ManifoldSurfaceMesh* inputMesh, VertexPositionGeometry* inputGeo);
 
     VertexData<Vector2> flatten() const;
-
+    VertexData<Vector2> tutte_flatten() const;
+    std::vector<Vertex> getBoundaryVertices() const;
     SparseMatrix<std::complex<double>> buildConformalEnergy() const;
 };
