@@ -4,6 +4,7 @@
 #include "geometrycentral/surface/meshio.h"
 #include "geometrycentral/surface/vertex_position_geometry.h"
 
+
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
 
@@ -123,6 +124,84 @@ void redraw() {
     polyscope::requestRedraw();
 }
 
+//// 主曲率计算函数（在顶点处）
+//std::tuple<VertexData<double>, VertexData<double>, VertexData<Vector2>, VertexData<Vector2>>
+//computePrincipalCurvatures(VertexPositionGeometry& geometry) {
+//    SurfaceMesh& mesh = *geometry.mesh;
+//
+//    VertexData<double> k1(mesh), k2(mesh);
+//    VertexData<Vector2> dir1(mesh), dir2(mesh);
+//
+//    for (Vertex v : mesh.vertices()) {
+//        // 获取顶点位置
+//        Vector3 p0 = geometry.inputVertexPositions[v];
+//
+//        // 获取切空间基（用于投影到局部坐标系）
+//        auto basis = geometry.vertexTangentBasis(v);
+//        Vector3 e1 = basis.first;
+//        Vector3 e2 = basis.second;
+//
+//        // 收集 1-ring 邻域点（在切平面投影）
+//        std::vector<Vector2> neighbors;
+//
+//        for (Vertex nv : v.adjacentVertices()) {
+//            Vector3 p = geometry.inputVertexPositions[nv];
+//            Vector3 diff = p - p0;
+//            // 投影到切平面
+//            double x = dot(diff, e1);
+//            double y = dot(diff, e2);
+//            neighbors.push_back(Vector2{x, y});
+//        }
+//
+//        if (neighbors.size() < 3) {
+//            k1[v] = k2[v] = 0.0;
+//            dir1[v] = Vector2{1.0, 0.0};
+//            dir2[v] = Vector2{0.0, 1.0};
+//            continue;
+//        }
+//
+//        // 构建协方差矩阵（拟合局部高度场 z = f(x,y) 的 Hessian）
+//        // 简化方法：用 PCA 拟合二次曲面
+//        // 更准确方法：最小二乘拟合 ax² + bxy + cy²
+//
+//        // 这里使用一个简化的“邻域协方差法”
+//        Eigen::Matrix2d cov = Eigen::Matrix2d::Zero();
+//
+//        for (const Vector2& pt : neighbors) {
+//            cov(0,0) += pt.x * pt.x;
+//            cov(0,1) += pt.x * pt.y;
+//            cov(1,0) += pt.x * pt.y;
+//            cov(1,1) += pt.y * pt.y;
+//        }
+//        cov /= neighbors.size();
+//
+//        // 特征值分解
+//        Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> solver(cov);
+//        Eigen::Vector2d eigenvalues = solver.eigenvalues();
+//        Eigen::Matrix2d eigenvectors = solver.eigenvectors();
+//
+//        // 曲率近似为特征值的某种缩放（实际应拟合高度场二阶导数）
+//        // 这里仅为可视化，用相对大小即可
+//        double lambda1 = eigenvalues(0);
+//        double lambda2 = eigenvalues(1);
+//
+//        // 简单近似：假设曲率正比于特征值倒数或直接使用
+//        // 更准确做法：拟合局部二次曲面 z = ax² + bxy + cy²，然后 Hessian = [2a, b; b, 2c]
+//        // 我们这里用一个启发式缩放：
+//        k1[v] = lambda1 > lambda2 ? 1.0 / (lambda1 + 1e-8) : 1.0 / (lambda2 + 1e-8);
+//        k2[v] = lambda1 > lambda2 ? 1.0 / (lambda2 + 1e-8) : 1.0 / (lambda1 + 1e-8);
+//
+//        // 主方向
+//        dir1[v] = Vector2{eigenvectors(0,0), eigenvectors(1,0)};
+//        dir2[v] = Vector2{eigenvectors(0,1), eigenvectors(1,1)};
+//
+//        // 可选：根据曲率符号调整（这里省略，仅用于可视化相对大小）
+//    }
+//
+//    return std::make_tuple(k1, k2, dir1, dir2);
+//}
+
+
 void loadMesh(const std::string& filepath) {
     // Unregister the previous mesh if it exists
     if (psMesh) {
@@ -132,6 +211,21 @@ void loadMesh(const std::string& filepath) {
     std::tie(mesh, geometry) = readManifoldSurfaceMesh(filepath);
     psMesh = polyscope::registerSurfaceMesh("Primal mesh", geometry->inputVertexPositions, mesh->getFaceVertexList(),
                                             polyscopePermutations(*mesh));
+
+ /*   auto [k1, k2, dir1, dir2] = computePrincipalCurvatures(*geometry);
+    psMesh->addVertexScalarQuantity("k1 (approx)", k1)->setEnabled(true);
+    psMesh->addVertexScalarQuantity("k2 (approx)", k2);
+    VertexData<Vector3> dir1_world(*mesh);
+    for (Vertex v : mesh->vertices()) {
+        auto basis = geometry->vertexTangentBasis(v);
+        dir1_world[v] = dir1[v].x * basis.first + dir1[v].y * basis.second;
+    }
+    psMesh->addVertexVectorQuantity("Principal Dir 1", dir1_world)
+          ->setEnabled(true)
+          ->setVectorRadius(0.001)
+          ->setVectorLengthScale(0.1);*/
+
+
     psMesh->setEnabled(true);
     
     currentFilePath = filepath;
@@ -149,7 +243,7 @@ void addCheckerboard(VertexData<Vector2>& flattening) {
     checkerboard->setEnabled(true);
     checkerboard->setStyle(polyscope::ParamVizStyle::CHECKER);
     checkerboard->setCheckerColors(std::make_pair(glm::vec3{1.0, 0.45, 0.0}, glm::vec3{0.55, 0.27, 0.07}));
-    checkerboard->setCheckerSize(0.002);
+    checkerboard->setCheckerSize(0.01);
 }
 VertexData<Vector3> mapToMeshData(VertexData<Vector2>& flattening) {
 
@@ -173,9 +267,9 @@ void flattenMesh(FlattenMethod method) {
             // 实现 LSCM 展平算法
             break;
     }
-    ORIGINAL = geometry->inputVertexPositions;
     SpectralConformalParameterization SCP = SpectralConformalParameterization(mesh.get(), geometry.get());
-    SCP_FLATTENING = SCP.flatten();
+    //SCP_FLATTENING = SCP.flatten();
+    SCP_FLATTENING = SCP.tutte_flatten();
     SCP_MESH = mapToMeshData(SCP_FLATTENING);
     addCheckerboard(SCP_FLATTENING);
 
@@ -191,6 +285,7 @@ void flattenMesh(FlattenMethod method) {
         geometry->inputVertexPositions = ORIGINAL;
         polyscope::view::style = polyscope::view::NavigateStyle::Turntable;
     }
+    psMesh->updateVertexPositions(geometry->inputVertexPositions);
     redraw();
 }
 
@@ -263,10 +358,16 @@ void functionCallback() {
 }
 
 
+
+
 int main(int argc, char** argv) {
 
     strcpy(filePathBuffer, currentFilePath.c_str());
     ::loadMesh(currentFilePath);
+    ORIGINAL = geometry->inputVertexPositions;
+
+    // // 计算主曲率
+    //auto [k1, k2, dir1, dir2] = ::computePrincipalCurvatures(*geometry);
 
     polyscope::init();
     polyscope::state::userCallback = functionCallback;
