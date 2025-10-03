@@ -41,3 +41,4 @@
 .vscode/settings.json
 
 **/builds/
+projects/.vscode/settings.json

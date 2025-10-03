@@ -1,0 +1,1 @@
+ ./builds/bin/main ../../input/Nefertiti_face.obj
