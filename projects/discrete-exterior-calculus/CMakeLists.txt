@@ -64,6 +64,7 @@ endif()
 set(SRCS 
   src/main.cpp
   src/spectral-conformal-parameterization.cpp
+  src/lscm-param.cpp
   ../../utils/src/colormap.cpp
   ../../utils/src/solvers.cpp
 )

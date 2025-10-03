@@ -41,12 +41,12 @@ std::unique_ptr<ManifoldSurfaceMesh> mesh;
 std::unique_ptr<VertexPositionGeometry> geometry;
 
 polyscope::SurfaceMesh* psMesh;
-std::string currentFilePath = "../../../input/Nefertiti_face.obj";
+std::string currentFilePath = "/Users/liguoxiong/Desktop/GeometryLab/Discrete-Geometry-and-Topology/input/costa.obj";
 bool showFileDialog = false;
 char filePathBuffer[256];
 
 // 展平算法相关变量
-enum class FlattenMethod { Tutte, ARAP, LSCM, SCP};
+enum class FlattenMethod { Tutte, LSCM, SCP};
 FlattenMethod currentFlattenMethod = FlattenMethod::Tutte;
 polyscope::SurfaceParameterizationQuantity* checkerboard;
 Vector3 CoM;                        // original center of mass, for re-centering purposes
@@ -255,21 +255,21 @@ VertexData<Vector3> mapToMeshData(VertexData<Vector2>& flattening) {
 }
 // 展平算法函数实现（占位符）
 void flattenMesh(FlattenMethod method) {
-    // TODO: 实现具体的展平算法
+    SpectralConformalParameterization SCP = SpectralConformalParameterization(mesh.get(), geometry.get());
+
     switch (method) {
         case FlattenMethod::Tutte:
-            // 实现 Tutte 展平算法
+            SCP_FLATTENING = SCP.tutte_flatten();
             break;
-        case FlattenMethod::ARAP:
-            // 实现 ARAP 展平算法
+        case FlattenMethod::SCP:
+            SCP_FLATTENING = SCP.flatten();
             break;
         case FlattenMethod::LSCM:
-            // 实现 LSCM 展平算法
+            SCP_FLATTENING = SCP.lscm_flatten();
             break;
     }
-    SpectralConformalParameterization SCP = SpectralConformalParameterization(mesh.get(), geometry.get());
-    //SCP_FLATTENING = SCP.flatten();
-    SCP_FLATTENING = SCP.tutte_flatten();
+    
+    
     SCP_MESH = mapToMeshData(SCP_FLATTENING);
     addCheckerboard(SCP_FLATTENING);
 
@@ -318,7 +318,8 @@ void functionCallback() {
 #endif
     }
         // 展平算法下拉列表
-    const char* flattenMethodNames[] = { "Tutte", "ARAP", "LSCM","SCP" };
+    const char* flattenMethodNames[] = { "Tutte", "LSCM","SCP" };
+    
     int currentMethodIndex = static_cast<int>(currentFlattenMethod);
     if (ImGui::Combo("Flatten Method", &currentMethodIndex, flattenMethodNames, IM_ARRAYSIZE(flattenMethodNames))) {
         currentFlattenMethod = static_cast<FlattenMethod>(currentMethodIndex);
@@ -362,8 +363,33 @@ void functionCallback() {
 
 int main(int argc, char** argv) {
 
-    strcpy(filePathBuffer, currentFilePath.c_str());
-    ::loadMesh(currentFilePath);
+
+  // Configure the argument parser
+    args::ArgumentParser parser("15-458 HW6");
+    args::Positional<std::string> inputFilename(parser, "mesh", "A mesh file.");
+
+    // Parse args
+    try {
+        parser.ParseCLI(argc, argv);
+    } catch (args::Help) {
+        std::cout << parser;
+        return 0;
+    } catch (args::ParseError e) {
+        std::cerr << e.what() << std::endl;
+        std::cerr << parser;
+        return 1;
+    }
+
+    // If a mesh name was not given, use default mesh.
+    std::string filepath = "../../../input/soccerball.obj";
+    if (inputFilename) {
+        filepath = args::get(inputFilename);
+    }
+
+
+
+    // strcpy(filePathBuffer, currentFilePath.c_str());
+    ::loadMesh(filepath);//currentFilePath
     ORIGINAL = geometry->inputVertexPositions;
 
     // // 计算主曲率
