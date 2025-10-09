@@ -411,7 +411,7 @@ int main(int argc, char** argv) {
     }
 
     // If a mesh name was not given, use default mesh.
-    std::string filepath = "../../../input/bunny.obj";
+    std::string filepath = "../../../input/small_bunny.obj";
     if (inputFilename) {
         filepath = args::get(inputFilename);
     }
@@ -429,8 +429,8 @@ int main(int argc, char** argv) {
     // Initialize polyscope
     polyscope::init();
 
-    // Set the callback function
-    polyscope::state::userCallback = functionCallback;
+    //// Set the callback function
+    //polyscope::state::userCallback = functionCallback;
 
     // Add mesh to GUI
     psMesh = polyscope::registerSurfaceMesh(polyscope::guessNiceNameFromPath(filepath), geometry->inputVertexPositions,
