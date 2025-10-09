@@ -21,5 +21,6 @@ class SpectralConformalParameterization {
     VertexData<Vector2> tutte_flatten() const;
     std::vector<Vertex> getBoundaryVertices() const;
     VertexData<Vector2> lscm_flatten() const;
+    VertexData<Vector2> arap_flatten() const;
     SparseMatrix<std::complex<double>> buildConformalEnergy() const;
 };
