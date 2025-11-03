@@ -262,7 +262,7 @@ void flattenMesh(FlattenMethod method) {
             SCP_FLATTENING = SCP.tutte_flatten();
             break;
         case FlattenMethod::SCP:
-            SCP_FLATTENING = SCP.flatten();
+            SCP_FLATTENING = SCP.flatten();            
             break;
         case FlattenMethod::LSCM:
             SCP_FLATTENING = SCP.lscm_flatten();

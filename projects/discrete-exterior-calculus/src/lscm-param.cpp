@@ -27,21 +27,20 @@ std::map<Face, std::array<Vector2, 3>> computeLocalCoordinates(ManifoldSurfaceMe
         Vector3 e1 = p2 - p0;
         
         // 在局部坐标系中，第一个顶点在原点(0,0)
-        Vector2 local0(0.0, 0.0);
-        
+        Vector2 local0{0.0, 0.0};
         // 第二个顶点在x轴上，距离为e0的长度
         double len0 = e0.norm();
-        Vector2 local1(len0, 0.0);
+        Vector2 local1{len0, 0.0};
         
         // 第三个顶点的位置需要通过几何计算得到
         // 使用点积计算角度
-        double dot = dot(e0, e1);
-        double det = cross(e0, e1).norm(); // 叉积的模长
-        double angle = std::atan2(det, dot);
+        double x_val = dot(e0, e1);
+        double y_val = cross(e0, e1).norm();
+        double angle = std::atan2(y_val, x_val);
         
         // 第三个顶点的坐标
         double len1 = e1.norm();
-        Vector2 local2(len1 * std::cos(angle), len1 * std::sin(angle));
+        Vector2 local2{ len1 * std::cos(angle), len1 * std::sin(angle) };
         
         // 存储局部坐标
         localCoords[f] = {local0, local1, local2};
@@ -214,8 +213,8 @@ VertexData<Vector2> SpectralConformalParameterization::arap_flatten() const
                  // 计算局部坐标的边向量
                 Vector2 e_local = local[next_j] - local[j];
                 // 应用旋转矩阵
-                Vector2 e_rotated(R(0,0) * e_local.x + R(0,1) * e_local.y,
-                                  R(1,0) * e_local.x + R(1,1) * e_local.y);
+                Vector2 e_rotated{ R(0,0) * e_local.x + R(0,1) * e_local.y,
+                                  R(1,0) * e_local.x + R(1,1) * e_local.y };
 
                                   // 计算cotangent权重
                 double cot_weight = 0.5; // 简化处理，实际应该计算真实的cotangent权重
@@ -285,9 +284,8 @@ VertexData<Vector2> SpectralConformalParameterization::lscm_flatten() const {
     size_t nVertices = mesh->nVertices();
     size_t nFreeVertices = nVertices - 2;
     SparseMatrix<double> A(2*nFaces,2* nFreeVertices);
-    Vector<double> b(2*nFaces);
+    Vector<double> bRow(2*nFaces);
     std::vector<Eigen::Triplet<double>> A_entries;
-
     size_t faceIndex = 0;
     for (Face f: mesh->faces())
     {
@@ -310,12 +308,6 @@ VertexData<Vector2> SpectralConformalParameterization::lscm_flatten() const {
         double a = jacobian.real();
         double b = jacobian.imag();
         
-        // 建立方程: J * (p2 - p0) = p1 - p0
-        // 展开为实部和虚部的线性方程组
-        
-        // 实部方程: a*(u2-u0) - b*(v2-v0) = u1-u0
-        // 虚部方程: b*(u2-u0) + a*(v2-v0) = v1-v0
-        
         int row_real = 2 * faceIndex;
         int row_imag = 2 * faceIndex + 1;
         
@@ -333,7 +325,7 @@ VertexData<Vector2> SpectralConformalParameterization::lscm_flatten() const {
             else
             {
                  // 如果是pin点，将其贡献移到右边
-                Vector2 pinPos;
+                Vector2 pinPos = Vector2{0.0, 0.0};
                 if (vertices[2] == pin1) {
                     pinPos = Vector2{0.0, 0.0};
                 } else if (vertices[2] == pin2) {
@@ -342,8 +334,8 @@ VertexData<Vector2> SpectralConformalParameterization::lscm_flatten() const {
                     double distance = (pos1 - pos2).norm();
                     pinPos = Vector2{distance, 0.0};
                 }
-                b[row_real] -= a * pinPos.x - b * pinPos.y;
-                b[row_imag] -= b * pinPos.x + a * pinPos.y;
+                bRow[row_real] -= a * pinPos.x - b * pinPos.y;
+                bRow[row_imag] -= b * pinPos.x + a * pinPos.y;
             }
         }
       faceIndex++;
@@ -353,9 +345,8 @@ VertexData<Vector2> SpectralConformalParameterization::lscm_flatten() const {
     // 正规方程: A^T A x = A^T b  // 是否可以憨直地求逆解？ x = (ATA)_-1Ab
     SparseMatrix<double> AtA = A.transpose() * A;
     Eigen::SimplicialLDLT<SparseMatrix<double>>solver(AtA);
-    Vector<double> Atb = A.transpose() * b;
+    Vector<double> Atb = A.transpose() * bRow;
     Vector<double> solution = solver.solve(Atb);
-     // 将解映射回结果
     for (const auto& pair : vertexIndex) {
         Vertex v = pair.first;
         size_t idx = pair.second;
@@ -366,7 +357,6 @@ VertexData<Vector2> SpectralConformalParameterization::lscm_flatten() const {
     Vector3 pos1 = geometry->inputVertexPositions[pin1];
     Vector3 pos2 = geometry->inputVertexPositions[pin2];
     double distance = (pos1 - pos2).norm();
-    
     result[pin1].x = 0.0;
     result[pin1].y = 0.0;
     result[pin2].x = distance;
