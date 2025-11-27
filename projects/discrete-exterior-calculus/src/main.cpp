@@ -46,7 +46,7 @@ bool showFileDialog = false;
 char filePathBuffer[256];
 
 // 展平算法相关变量
-enum class FlattenMethod { Tutte, LSCM, SCP};
+enum class FlattenMethod { Tutte, LSCM, SCP,ARAP};
 FlattenMethod currentFlattenMethod = FlattenMethod::Tutte;
 polyscope::SurfaceParameterizationQuantity* checkerboard;
 Vector3 CoM;                        // original center of mass, for re-centering purposes
@@ -262,7 +262,7 @@ void flattenMesh(FlattenMethod method) {
             SCP_FLATTENING = SCP.tutte_flatten();
             break;
         case FlattenMethod::SCP:
-            SCP_FLATTENING = SCP.flatten();            
+            SCP_FLATTENING = SCP.arap_flatten();            
             break;
         case FlattenMethod::LSCM:
             SCP_FLATTENING = SCP.lscm_flatten();
